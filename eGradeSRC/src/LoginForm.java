@@ -1,36 +1,32 @@
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.image.BufferedImage;
-import java.io.File;
 
-public class LoginForm extends JFrame{
+public class LoginForm extends JFrame {
 
     private JTextField emailField;
     private JPasswordField passwordField;
 
     public LoginForm() {
-
         setTitle("eGrade Parent Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(850, 450);
         setLocationRelativeTo(null);
         setResizable(false);
-        setLayout(new GridLayout(1, 2)); // Basicly damo screen na 2
+        setLayout(new GridLayout(1, 2)); // Split screen
 
-
+        // Left Panel – Login form
         JPanel leftPanel = new JPanel();
         leftPanel.setLayout(null);
-        leftPanel.setBackground(new Color(230, 242, 255)); //light-modra
+        leftPanel.setBackground(new Color(230, 242, 255));
 
         JLabel welcomeLabel = new JLabel("Welcome to eGrade!");
         welcomeLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
         welcomeLabel.setBounds(50, 40, 300, 30);
         leftPanel.add(welcomeLabel);
 
-        JLabel descLabel = new JLabel("Parent Access Portal");
+        JLabel descLabel = new JLabel("Parent / Teacher Portal");
         descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
         descLabel.setBounds(50, 75, 300, 25);
         leftPanel.add(descLabel);
@@ -69,35 +65,39 @@ public class LoginForm extends JFrame{
             public void actionPerformed(ActionEvent e) {
                 String email = emailField.getText().trim();
                 String password = new String(passwordField.getPassword());
+                String userType = isValidCredentials(email, password);
 
-                if (email.isEmpty() || password.isEmpty()) {
-                    statusLabel.setText("Please enter email and password.");
-                } else if (isValidCredentials(email, password)) {
-                    statusLabel.setForeground(new Color(0, 128, 0));
-                    statusLabel.setText("Login successful! 🎉");
-                    // TODO: Redirect to next screen
-                } else {
+                if (userType == null) {
                     statusLabel.setForeground(Color.RED);
                     statusLabel.setText("Invalid email or password.");
+                } else {
+                    statusLabel.setForeground(new Color(0, 128, 0));
+                    statusLabel.setText("Login successful! 🎉");
+                    dispose();
+
+                    int userId = DatabaseManager.loggedInUserId;
+
+                    if (userType.equalsIgnoreCase("parent")) {
+                        new ParentForm(userId);
+                    } else if (userType.equalsIgnoreCase("teacher")) {
+                        new TeacherForm(userId);
+                    } else {
+                        JOptionPane.showMessageDialog(null, "Unknown user type: " + userType);
+                    }
                 }
             }
         });
 
-
+        // Right Panel – Image
         JPanel rightPanel = new JPanel(new BorderLayout());
         rightPanel.setBackground(new Color(245, 250, 255));
 
         try {
-            // Load image from src/IMG/loginimg.jpg
-            ImageIcon icon = new ImageIcon(getClass().getResource("/IMG/loginimg.jpg"));
-
-
-            //scaling kurwa
+            ImageIcon icon = new ImageIcon(getClass().getResource("/IMG/child.jpg"));
             Image scaledImage = icon.getImage().getScaledInstance(400, 400, Image.SCALE_SMOOTH);
             JLabel imageLabel = new JLabel(new ImageIcon(scaledImage));
             imageLabel.setHorizontalAlignment(SwingConstants.CENTER);
             imageLabel.setVerticalAlignment(SwingConstants.CENTER);
-
             rightPanel.add(imageLabel, BorderLayout.CENTER);
         } catch (Exception ex) {
             JLabel fallbackLabel = new JLabel("Image not found 😢", SwingConstants.CENTER);
@@ -111,9 +111,7 @@ public class LoginForm extends JFrame{
         setVisible(true);
     }
 
-    private boolean isValidCredentials(String email, String password) {
-        return email.equals("parent@egrade.com") && password.equals("parent123");
+    private String isValidCredentials(String email, String password) {
+        return DatabaseManager.validateLogin(email, password); // returns user_type or null
     }
-
-
 }
